@@ -1,0 +1,42 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-primary: #FAFCFE;
+  --bg-card: #FFFFFF;
+  --text-primary: #0F1A2E;
+  --text-secondary: #4A5568;
+  --text-muted: #718096;
+  --accent-blue: #1A56DB;
+  --accent-blue-light: #E8F0FE;
+  --accent-green: #3AAE6F;
+  --accent-green-light: #E6F7EE;
+  --border: #E2E8F0;
+  --border-light: #F1F5F9;
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
