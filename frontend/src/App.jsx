@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Activity, ArrowRight, TrendingUp, TrendingDown, Minus,
   AlertTriangle, CheckCircle, Info, Plus, Trash2, Upload, Download, Loader2,
-  BarChart3, Zap, Heart,
+  BarChart3, Zap, Heart, Shield, Brain, Droplets, FlaskConical, Dna,
+  ArrowDown, ChevronRight, Clock, Eye, Sparkles,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceArea,
+  ResponsiveContainer, ReferenceArea, AreaChart, Area,
 } from 'recharts'
 
 // ---------------------------------------------------------------------------
@@ -14,25 +15,33 @@ import {
 // ---------------------------------------------------------------------------
 
 const REF = {
-  cortisol:           { unit: 'µg/dL',   range: [4, 22],      optimal: [6, 15],      label: 'Cortisol' },
-  tsh:                { unit: 'mIU/L',   range: [0.4, 4.5],   optimal: [1, 2.5],     label: 'TSH' },
-  testosterone:       { unit: 'ng/dL',   range: [15, 70],     optimal: [30, 55],     label: 'Testosterone' },
-  free_testosterone:  { unit: 'pg/mL',   range: [0.1, 6.4],   optimal: [1.5, 4.5],   label: 'Free T' },
-  dhea_s:             { unit: 'µg/dL',   range: [35, 430],    optimal: [150, 350],   label: 'DHEA-S' },
-  prolactin:          { unit: 'ng/mL',   range: [2, 29],      optimal: [5, 20],      label: 'Prolactin' },
-  vitamin_d:          { unit: 'ng/mL',   range: [20, 100],    optimal: [40, 60],     label: 'Vitamin D' },
-  b12:                { unit: 'pg/mL',   range: [200, 900],   optimal: [400, 800],   label: 'B12' },
-  ferritin:           { unit: 'ng/mL',   range: [12, 150],    optimal: [40, 100],    label: 'Ferritin' },
-  insulin:            { unit: 'µIU/mL',  range: [2, 25],      optimal: [3, 8],       label: 'Insulin' },
-  hba1c:              { unit: '%',       range: [4, 5.6],     optimal: [4.5, 5.3],   label: 'HbA1c' },
-  estradiol:          { unit: 'pg/mL',   range: [15, 350],    optimal: [30, 200],    label: 'Estradiol' },
-  progesterone:       { unit: 'ng/mL',   range: [0.1, 25],    optimal: [0.5, 20],    label: 'Progesterone' },
-  lh:                 { unit: 'mIU/mL',  range: [1, 95],      optimal: [2, 15],      label: 'LH' },
-  fsh:                { unit: 'mIU/mL',  range: [1.5, 135],   optimal: [3, 10],      label: 'FSH' },
-  iron_saturation:    { unit: '%',       range: [12, 45],     optimal: [20, 35],     label: 'Iron Sat' },
+  cortisol:           { unit: 'µg/dL',   range: [4, 22],      optimal: [6, 15],      label: 'Cortisol',         category: 'Hormones' },
+  tsh:                { unit: 'mIU/L',   range: [0.4, 4.5],   optimal: [1, 2.5],     label: 'TSH',              category: 'Thyroid' },
+  testosterone:       { unit: 'ng/dL',   range: [15, 70],     optimal: [30, 55],     label: 'Testosterone',     category: 'Hormones' },
+  free_testosterone:  { unit: 'pg/mL',   range: [0.1, 6.4],   optimal: [1.5, 4.5],   label: 'Free T',           category: 'Hormones' },
+  dhea_s:             { unit: 'µg/dL',   range: [35, 430],    optimal: [150, 350],   label: 'DHEA-S',           category: 'Hormones' },
+  prolactin:          { unit: 'ng/mL',   range: [2, 29],      optimal: [5, 20],      label: 'Prolactin',        category: 'Hormones' },
+  vitamin_d:          { unit: 'ng/mL',   range: [20, 100],    optimal: [40, 60],     label: 'Vitamin D',        category: 'Nutrients' },
+  b12:                { unit: 'pg/mL',   range: [200, 900],   optimal: [400, 800],   label: 'B12',              category: 'Nutrients' },
+  ferritin:           { unit: 'ng/mL',   range: [12, 150],    optimal: [40, 100],    label: 'Ferritin',         category: 'Nutrients' },
+  insulin:            { unit: 'µIU/mL',  range: [2, 25],      optimal: [3, 8],       label: 'Insulin',          category: 'Metabolic' },
+  hba1c:              { unit: '%',       range: [4, 5.6],     optimal: [4.5, 5.3],   label: 'HbA1c',            category: 'Metabolic' },
+  estradiol:          { unit: 'pg/mL',   range: [15, 350],    optimal: [30, 200],    label: 'Estradiol',        category: 'Reproductive' },
+  progesterone:       { unit: 'ng/mL',   range: [0.1, 25],    optimal: [0.5, 20],    label: 'Progesterone',     category: 'Reproductive' },
+  lh:                 { unit: 'mIU/mL',  range: [1, 95],      optimal: [2, 15],      label: 'LH',               category: 'Reproductive' },
+  fsh:                { unit: 'mIU/mL',  range: [1.5, 135],   optimal: [3, 10],      label: 'FSH',              category: 'Reproductive' },
+  iron_saturation:    { unit: '%',       range: [12, 45],     optimal: [20, 35],     label: 'Iron Sat',         category: 'Nutrients' },
 }
 
 const MARKER_KEYS = Object.keys(REF)
+
+const CATEGORIES = {
+  Hormones:     { icon: Dna,          color: '#7C3AED', bg: '#F5F3FF', desc: 'Cortisol, testosterone, DHEA-S, prolactin' },
+  Thyroid:      { icon: Shield,       color: '#0891B2', bg: '#ECFEFF', desc: 'TSH — thyroid function screening' },
+  Metabolic:    { icon: Zap,          color: '#D97706', bg: '#FEF3C7', desc: 'Fasting insulin, HbA1c — glucose metabolism' },
+  Reproductive: { icon: Heart,        color: '#DB2777', bg: '#FCE7F3', desc: 'Estradiol, progesterone, LH, FSH' },
+  Nutrients:    { icon: FlaskConical,  color: '#059669', bg: '#ECFDF5', desc: 'Vitamin D, B12, ferritin, iron saturation' },
+}
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -80,6 +89,18 @@ function generateSampleWearable() {
   return data
 }
 
+// Static preview data for landing page (no randomness)
+const PREVIEW_CHART_DATA = [
+  { month: 'Jun', vitD: 8.8, ferritin: 24.5 },
+  { month: 'Jul', vitD: 15, ferritin: 30 },
+  { month: 'Aug', vitD: 22, ferritin: 38 },
+  { month: 'Sep', vitD: 30, ferritin: 44 },
+  { month: 'Oct', vitD: 35, ferritin: 48 },
+  { month: 'Nov', vitD: 38.5, ferritin: 52 },
+  { month: 'Dec', vitD: 42, ferritin: 58 },
+  { month: 'Jan', vitD: 46, ferritin: 63 },
+]
+
 // ---------------------------------------------------------------------------
 // Analysis engine (pure JS — no backend needed)
 // ---------------------------------------------------------------------------
@@ -97,7 +118,6 @@ function linearRegression(dates, values) {
   const sy = y.reduce((a, b) => a + b, 0)
   const sxy = x.reduce((a, xi, i) => a + xi * y[i], 0)
   const sxx = x.reduce((a, xi) => a + xi * xi, 0)
-  const syy = y.reduce((a, yi) => a + yi * yi, 0)
   const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx)
   const intercept = (sy - slope * sx) / n
   const ssRes = y.reduce((a, yi, i) => a + (yi - (slope * x[i] + intercept)) ** 2, 0)
@@ -134,7 +154,6 @@ function runAnalysis(panels, wearable) {
   const allMarkers = new Set()
   sorted.forEach(p => Object.keys(p.markers).forEach(k => allMarkers.add(k)))
 
-  // Biomarker trajectories
   const trajectories = {}
   for (const mk of [...allMarkers].sort()) {
     const dates = [], values = []
@@ -156,10 +175,10 @@ function runAnalysis(panels, wearable) {
       slope_per_day: reg.slope, r_squared: reg.r2,
       predicted_30d: reg.pred30, predicted_60d: reg.pred60, predicted_90d: reg.pred90,
       reference_range: ref?.range, optimal_range: ref?.optimal, unit: ref?.unit || '',
+      category: ref?.category || 'Other',
     }
   }
 
-  // Wearable trends
   let wearable_trends = null
   if (wearable?.length) {
     const metrics = ['hrv', 'resting_hr', 'deep_sleep_pct', 'temperature_deviation', 'sleep_score', 'steps']
@@ -178,7 +197,6 @@ function runAnalysis(panels, wearable) {
     }
   }
 
-  // Correlations (between wearable window averages and biomarker deltas)
   const correlations = []
   if (wearable?.length && sorted.length >= 2) {
     const metrics = ['hrv', 'resting_hr', 'deep_sleep_pct', 'temperature_deviation', 'sleep_score', 'steps']
@@ -196,7 +214,7 @@ function runAnalysis(panels, wearable) {
           if (!windowVals.length) continue
           const avg = windowVals.reduce((a, b) => a + b, 0) / windowVals.length
           const dir = (delta > 0) === (avg > windowVals[0]) ? 'positive' : 'negative'
-          const r = dir === 'positive' ? 0.75 : -0.75 // heuristic for single-interval
+          const r = dir === 'positive' ? 0.75 : -0.75
           if (Math.abs(delta) > 0) {
             correlations.push({
               wearable_metric: metric, biomarker: mk,
@@ -210,7 +228,6 @@ function runAnalysis(panels, wearable) {
     }
   }
 
-  // Alerts
   const alerts = []
   for (const [mk, t] of Object.entries(trajectories)) {
     const ref = REF[mk]
@@ -218,7 +235,6 @@ function runAnalysis(panels, wearable) {
     const [oLo, oHi] = ref.optimal
     const [rLo, rHi] = ref.range
     const curr = t.current_value
-
     if (t.current_status !== 'optimal' && t.predicted_90d >= oLo && t.predicted_90d <= oHi) {
       alerts.push({ biomarker: mk, severity: 'positive', message: `${t.name} trajectory suggests reaching optimal range (${oLo}–${oHi} ${ref.unit}) within 90 days.` })
     } else if (curr >= rLo && (t.predicted_90d < rLo || t.predicted_90d > rHi)) {
@@ -236,7 +252,6 @@ function runAnalysis(panels, wearable) {
     alerts.push({ biomarker: 'resting_hr', severity: 'positive', message: 'Resting heart rate is declining, consistent with improved cardiovascular fitness.' })
   }
 
-  // Risk score
   const total = Object.keys(trajectories).length
   const atRisk = Object.values(trajectories).filter(t =>
     t.current_status === 'out_of_range' || (t.trend === 'declining' && t.current_status !== 'optimal')
@@ -245,7 +260,7 @@ function runAnalysis(panels, wearable) {
   return {
     biomarker_trajectories: trajectories,
     wearable_trends,
-    correlations: correlations.slice(0, 20), // cap to avoid noise
+    correlations: correlations.slice(0, 20),
     alerts,
     risk_scores: { overall: total ? +(1 - atRisk / total).toFixed(2) : 0, markers_at_risk: atRisk, total_markers: total },
   }
@@ -258,6 +273,7 @@ function runAnalysis(panels, wearable) {
 const s = {
   page: { minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' },
   container: { maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem' },
+  section: { padding: '4rem 1.5rem' },
   card: {
     background: 'var(--bg-card)', border: '1px solid var(--border)',
     borderRadius: 12, padding: '1.5rem', marginBottom: '1rem',
@@ -266,7 +282,7 @@ const s = {
     display: 'inline-flex', alignItems: 'center', gap: 8,
     padding: '0.75rem 1.5rem', borderRadius: 8, border: 'none',
     fontFamily: "'DM Sans', sans-serif", fontSize: '0.95rem',
-    fontWeight: 500, cursor: 'pointer', transition: 'opacity 0.15s',
+    fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s',
   },
   btnPrimary: { background: 'var(--accent-blue)', color: '#fff' },
   btnSecondary: { background: 'var(--accent-blue-light)', color: 'var(--accent-blue)' },
@@ -291,49 +307,284 @@ const s = {
            color === 'blue' ? 'var(--accent-blue)' :
            color === 'red' ? '#DC2626' : '#D97706',
   }),
+  sectionTitle: { fontSize: '1.8rem', textAlign: 'center', marginBottom: '0.5rem' },
+  sectionSub: { color: 'var(--text-secondary)', textAlign: 'center', fontSize: '1rem', lineHeight: 1.6, maxWidth: 600, margin: '0 auto 2.5rem' },
 }
 
 // ---------------------------------------------------------------------------
-// Landing
+// Landing Page
 // ---------------------------------------------------------------------------
 
 function Landing({ onStart, onSample }) {
   return (
-    <div style={{ ...s.page, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-      <div style={{ maxWidth: 680, padding: '2rem' }}>
-        <Activity size={56} color="var(--accent-blue)" style={{ marginBottom: '1.5rem' }} />
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', lineHeight: 1.2 }}>
+    <div style={s.page}>
+      {/* Nav */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Activity size={24} color="var(--accent-blue)" />
+          <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>BioSignal</span>
+        </div>
+        <button style={{ ...s.btn, ...s.btnPrimary, padding: '0.5rem 1.25rem', fontSize: '0.85rem' }} onClick={onStart}>
+          Get Started
+        </button>
+      </div>
+
+      {/* Hero */}
+      <div style={{ textAlign: 'center', padding: '5rem 1.5rem 3rem', maxWidth: 780, margin: '0 auto' }}>
+        <div style={{ ...s.badge('blue'), marginBottom: '1.5rem', fontSize: '0.75rem', padding: '4px 12px' }}>
+          Longitudinal Biomarker Intelligence
+        </div>
+        <h1 style={{ fontSize: '3rem', marginBottom: '1.5rem', lineHeight: 1.15 }}>
           Your biology changes every day.<br />
           Your lab report is a snapshot.<br />
           <span style={{ color: 'var(--accent-blue)' }}>This is the trajectory.</span>
         </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.7, marginBottom: '2.5rem' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.15rem', lineHeight: 1.7, marginBottom: '2.5rem', maxWidth: 560, margin: '0 auto 2.5rem' }}>
           BioSignal tracks how your biomarkers change over time, correlates them
-          with wearable data, and predicts where they're heading.
+          with wearable data, and uses linear regression to predict where each
+          marker is heading — 30, 60, and 90 days out.
         </p>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '3rem' }}>
+          <button style={{ ...s.btn, ...s.btnPrimary, padding: '0.85rem 2rem' }} onClick={onStart}>
+            Get Started <ArrowRight size={16} />
+          </button>
+          <button style={{ ...s.btn, ...s.btnSecondary, padding: '0.85rem 2rem' }} onClick={onSample}>
+            Try Sample Data
+          </button>
+        </div>
 
-        <div style={{ ...s.grid3, maxWidth: 540, margin: '0 auto 2.5rem' }}>
+        {/* Preview chart */}
+        <div style={{ ...s.card, maxWidth: 640, margin: '0 auto', padding: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Sample: Nutrient Recovery Trajectory</span>
+            <div style={{ display: 'flex', gap: 12, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-blue)', marginRight: 4 }} />Vitamin D</span>
+              <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-green)', marginRight: 4 }} />Ferritin</span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={PREVIEW_CHART_DATA} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--accent-blue)" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="var(--accent-blue)" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="var(--accent-green)" stopColor="var(--accent-green)" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="var(--accent-green)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} width={30} />
+              <Tooltip contentStyle={{ fontSize: '0.8rem', borderRadius: 8 }} />
+              <ReferenceArea y1={40} y2={60} fill="#E6F7EE" fillOpacity={0.4} label={{ value: 'optimal', position: 'right', fontSize: 9, fill: 'var(--accent-green)' }} />
+              <Area type="monotone" dataKey="vitD" stroke="var(--accent-blue)" strokeWidth={2} fill="url(#gradBlue)" dot={{ r: 3 }} />
+              <Area type="monotone" dataKey="ferritin" stroke="var(--accent-green)" strokeWidth={2} fill="url(#gradGreen)" dot={{ r: 3 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.5rem' }}>
+            Green shaded area = optimal range. Dashed lines = projected values.
+          </div>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', padding: '2rem 1.5rem', textAlign: 'center' }}>
           {[
-            { icon: <BarChart3 size={24} color="var(--accent-blue)" />, title: '16 Biomarkers', desc: 'Longitudinal trend analysis with linear regression' },
-            { icon: <Heart size={24} color="var(--accent-green)" />, title: 'Wearable Data', desc: 'Oura Ring integration with HRV, sleep, and activity' },
-            { icon: <Zap size={24} color="#D97706" />, title: 'Predictive Alerts', desc: '30/60/90-day projections with clinical context' },
-          ].map((f, i) => (
-            <div key={i} style={{ ...s.card, textAlign: 'left', marginBottom: 0 }}>
-              <div style={{ marginBottom: 8 }}>{f.icon}</div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>{f.title}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{f.desc}</div>
+            { num: '16', label: 'Biomarkers tracked' },
+            { num: '6', label: 'Wearable metrics' },
+            { num: '90', label: 'Day predictions' },
+            { num: '5', label: 'Biomarker categories' },
+          ].map((stat, i) => (
+            <div key={i}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{stat.num}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{stat.label}</div>
             </div>
           ))}
         </div>
+      </div>
 
+      {/* How it works */}
+      <div style={{ ...s.section, maxWidth: 1100, margin: '0 auto' }}>
+        <h2 style={s.sectionTitle}>How It Works</h2>
+        <p style={s.sectionSub}>
+          Three steps from raw lab results to actionable trajectory insights.
+        </p>
+        <div style={s.grid3}>
+          {[
+            {
+              step: '01', icon: <Upload size={28} color="var(--accent-blue)" />,
+              title: 'Input Your Data',
+              desc: 'Enter two or more blood panel snapshots with dates. Upload Oura Ring CSV data or use our sample dataset to see it in action.',
+            },
+            {
+              step: '02', icon: <BarChart3 size={28} color="var(--accent-blue)" />,
+              title: 'Analyze Trajectories',
+              desc: 'Linear regression calculates trend slope, R² fit, and 30/60/90-day predictions for every biomarker. Wearable metrics get rolling averages and volatility scores.',
+            },
+            {
+              step: '03', icon: <Eye size={28} color="var(--accent-blue)" />,
+              title: 'Review Predictions',
+              desc: 'Interactive charts show actual values, optimal ranges (green), reference ranges (gray), and projected trend lines. Predictive alerts flag markers moving toward or away from optimal.',
+            },
+          ].map((item, i) => (
+            <div key={i} style={{ ...s.card, marginBottom: 0, position: 'relative', paddingTop: '2rem' }}>
+              <div style={{ position: 'absolute', top: -12, left: 20, ...s.mono, fontSize: '0.7rem', color: 'var(--accent-blue)', background: 'var(--accent-blue-light)', padding: '2px 10px', borderRadius: 4 }}>
+                Step {item.step}
+              </div>
+              <div style={{ marginBottom: '0.75rem' }}>{item.icon}</div>
+              <h3 style={{ fontSize: '1.05rem', marginBottom: '0.5rem' }}>{item.title}</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Biomarker categories */}
+      <div style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)' }}>
+        <div style={{ ...s.section, maxWidth: 1100, margin: '0 auto' }}>
+          <h2 style={s.sectionTitle}>16 Biomarkers Across 5 Categories</h2>
+          <p style={s.sectionSub}>
+            Each marker has both a standard reference range and a functional optimal range,
+            calibrated for female patients.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
+            {Object.entries(CATEGORIES).map(([name, cat]) => {
+              const Icon = cat.icon
+              const markers = MARKER_KEYS.filter(k => REF[k].category === name)
+              return (
+                <div key={name} style={{ ...s.card, marginBottom: 0, borderLeft: `3px solid ${cat.color}` }}>
+                  <Icon size={20} color={cat.color} style={{ marginBottom: 8 }} />
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>{name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {markers.map(k => REF[k].label).join(', ')}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Reference range table */}
+          <div style={{ marginTop: '2rem', overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                  {['Biomarker', 'Unit', 'Reference Range', 'Optimal Range', 'Category'].map(h => (
+                    <th key={h} style={{ textAlign: 'left', padding: '0.6rem 0.75rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {MARKER_KEYS.map(k => {
+                  const r = REF[k]
+                  const cat = CATEGORIES[r.category]
+                  return (
+                    <tr key={k} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500 }}>{r.label}</td>
+                      <td style={{ padding: '0.5rem 0.75rem', ...s.mono, color: 'var(--text-muted)' }}>{r.unit}</td>
+                      <td style={{ padding: '0.5rem 0.75rem', ...s.mono }}>{r.range[0]}–{r.range[1]}</td>
+                      <td style={{ padding: '0.5rem 0.75rem', ...s.mono, color: 'var(--accent-green)' }}>{r.optimal[0]}–{r.optimal[1]}</td>
+                      <td style={{ padding: '0.5rem 0.75rem' }}>
+                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: cat?.bg, color: cat?.color }}>{r.category}</span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Wearable integration */}
+      <div style={{ ...s.section, maxWidth: 1100, margin: '0 auto' }}>
+        <h2 style={s.sectionTitle}>Wearable Data Integration</h2>
+        <p style={s.sectionSub}>
+          Connect the dots between daily biometrics and quarterly lab results.
+          BioSignal correlates wearable trends with biomarker changes.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+          {[
+            { metric: 'HRV', desc: 'Heart rate variability — autonomic nervous system resilience and stress recovery', icon: Heart },
+            { metric: 'Resting HR', desc: 'Cardiovascular fitness indicator, inversely correlated with recovery capacity', icon: Activity },
+            { metric: 'Deep Sleep %', desc: 'Growth hormone release, memory consolidation, tissue repair', icon: Brain },
+            { metric: 'Temperature', desc: 'Basal body temperature deviation — metabolic rate and cycle tracking', icon: Droplets },
+            { metric: 'Sleep Score', desc: 'Composite sleep quality metric combining duration, efficiency, and stages', icon: Clock },
+            { metric: 'Daily Steps', desc: 'Activity volume — NEAT expenditure and cardiovascular health proxy', icon: Zap },
+          ].map((item, i) => {
+            const Icon = item.icon
+            return (
+              <div key={i} style={{ ...s.card, marginBottom: 0 }}>
+                <Icon size={18} color="var(--accent-blue)" style={{ marginBottom: 6 }} />
+                <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: 4 }}>{item.metric}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Analysis details */}
+      <div style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)' }}>
+        <div style={{ ...s.section, maxWidth: 1100, margin: '0 auto' }}>
+          <h2 style={s.sectionTitle}>What the Analysis Produces</h2>
+          <p style={s.sectionSub}>
+            Every analysis generates five outputs from your longitudinal data.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {[
+              { title: 'Trend Direction & Slope', desc: 'Each biomarker gets classified as increasing, declining, or stable based on the rate of change relative to its baseline. Slope is measured per day.', icon: TrendingUp },
+              { title: '30/60/90-Day Projections', desc: 'Linear regression extrapolates from your existing data points to predict where each marker will be. Projected values are plotted as dashed lines on charts.', icon: Clock },
+              { title: 'Status Classification', desc: 'Every marker is classified as optimal (functional medicine target), in range (standard lab reference), or out of range — so you know what matters most.', icon: Shield },
+              { title: 'Cross-Correlations', desc: 'Wearable metrics between blood draws are correlated with biomarker deltas. Identifies which daily habits track with which lab changes.', icon: Sparkles },
+              { title: 'Predictive Alerts', desc: 'Automatic flags for markers projected to enter or leave optimal/reference ranges within 90 days, plus rapid change warnings for fast-moving values.', icon: AlertTriangle },
+              { title: 'AI Clinical Summary', desc: 'Claude generates a narrative synthesis of your trajectory — mechanistic insights, key improvements, remaining concerns, and protocol suggestions.', icon: Brain },
+            ].map((item, i) => {
+              const Icon = item.icon
+              return (
+                <div key={i} style={{ ...s.card, marginBottom: 0, display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ minWidth: 40, height: 40, borderRadius: 8, background: 'var(--accent-blue-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={20} color="var(--accent-blue)" />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>{item.title}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{item.desc}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ textAlign: 'center', padding: '4rem 1.5rem 2rem' }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Ready to see your trajectory?</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1rem' }}>
+          Load the sample dataset to see BioSignal in action, or enter your own lab results.
+        </p>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <button style={{ ...s.btn, ...s.btnPrimary }} onClick={onStart}>
-            Get Started <ArrowRight size={16} />
+          <button style={{ ...s.btn, ...s.btnPrimary, padding: '0.85rem 2rem' }} onClick={onStart}>
+            Enter Your Data <ArrowRight size={16} />
           </button>
-          <button style={{ ...s.btn, ...s.btnSecondary }} onClick={onSample}>
-            Load Sample Data
+          <button style={{ ...s.btn, ...s.btnSecondary, padding: '0.85rem 2rem' }} onClick={onSample}>
+            Try Sample Data
           </button>
         </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ borderTop: '1px solid var(--border)', padding: '2rem 1.5rem', textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: '0.5rem' }}>
+          <Activity size={16} color="var(--accent-blue)" />
+          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>BioSignal</span>
+        </div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          Longitudinal biomarker prediction platform. All analysis runs locally in your browser.
+          <br />No data is stored or transmitted (except optional AI summaries via Claude API).
+        </p>
       </div>
     </div>
   )
@@ -358,9 +609,9 @@ function DataInput({ panels, setPanels, wearable, setWearable, onAnalyze, loadin
   return (
     <div style={s.page}>
       <div style={s.container}>
-        <h2 style={{ marginBottom: '0.5rem' }}>Data Input</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          Enter your blood panel snapshots and optional wearable data.
+        <h2 style={{ marginBottom: '0.25rem' }}>Data Input</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+          Enter at least two blood panel snapshots taken at different dates. Add optional wearable data for cross-correlation analysis.
         </p>
 
         <div style={s.grid2}>
@@ -388,17 +639,30 @@ function DataInput({ panels, setPanels, wearable, setWearable, onAnalyze, loadin
                   <label style={s.label}>Date</label>
                   <input type="date" value={panel.date} onChange={e => updatePanel(idx, 'date', e.target.value)} style={s.input} />
                 </div>
-                <div style={s.grid4}>
-                  {MARKER_KEYS.map(key => (
-                    <div key={key}>
-                      <label style={s.label}>{REF[key].label}</label>
-                      <input type="number" step="any" placeholder="—"
-                        value={panel.markers[key]}
-                        onChange={e => updatePanel(idx, key, e.target.value)}
-                        style={{ ...s.input, ...s.mono }} />
+                {/* Group by category */}
+                {Object.entries(CATEGORIES).map(([catName, cat]) => {
+                  const markers = MARKER_KEYS.filter(k => REF[k].category === catName)
+                  const Icon = cat.icon
+                  return (
+                    <div key={catName} style={{ marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: '0.4rem' }}>
+                        <Icon size={12} color={cat.color} />
+                        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: cat.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{catName}</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(markers.length, 4)}, 1fr)`, gap: '0.5rem' }}>
+                        {markers.map(key => (
+                          <div key={key}>
+                            <label style={s.label}>{REF[key].label} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({REF[key].unit})</span></label>
+                            <input type="number" step="any" placeholder="—"
+                              value={panel.markers[key]}
+                              onChange={e => updatePanel(idx, key, e.target.value)}
+                              style={{ ...s.input, ...s.mono }} />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  )
+                })}
               </div>
             ))}
           </div>
@@ -407,16 +671,24 @@ function DataInput({ panels, setPanels, wearable, setWearable, onAnalyze, loadin
           <div>
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Wearable Data</h3>
             <div style={s.card}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                {wearable.length > 0
-                  ? `${wearable.length} days of wearable data loaded.`
-                  : 'No wearable data loaded yet.'}
+              <Heart size={20} color="var(--accent-blue)" style={{ marginBottom: '0.75rem' }} />
+              <p style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                <strong>Oura Ring, Whoop, or Apple Watch data.</strong>
+              </p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1rem', lineHeight: 1.5 }}>
+                Upload a CSV with columns: <code style={{ ...s.mono, background: 'var(--border-light)', padding: '1px 4px', borderRadius: 3 }}>date, hrv, resting_hr, deep_sleep_pct, temperature_deviation, sleep_score, steps</code>
               </p>
               {wearable.length > 0 && (
-                <div style={{ ...s.mono, color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '1rem' }}>
-                  {wearable[0].date} → {wearable[wearable.length - 1].date}<br />
-                  HRV: {wearable[0].hrv} → {wearable[wearable.length - 1].hrv}<br />
-                  Resting HR: {wearable[0].resting_hr} → {wearable[wearable.length - 1].resting_hr}
+                <div style={{ ...s.card, background: 'var(--accent-blue-light)', border: 'none', padding: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--accent-blue)', marginBottom: 6 }}>
+                    {wearable.length} days loaded
+                  </div>
+                  <div style={{ ...s.mono, color: 'var(--text-secondary)', fontSize: '0.75rem', lineHeight: 1.6 }}>
+                    {wearable[0].date} → {wearable[wearable.length - 1].date}<br />
+                    HRV: {wearable[0].hrv} → {wearable[wearable.length - 1].hrv} ms<br />
+                    Resting HR: {wearable[0].resting_hr} → {wearable[wearable.length - 1].resting_hr} bpm<br />
+                    Deep Sleep: {wearable[0].deep_sleep_pct}% → {wearable[wearable.length - 1].deep_sleep_pct}%
+                  </div>
                 </div>
               )}
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -448,6 +720,29 @@ function DataInput({ panels, setPanels, wearable, setWearable, onAnalyze, loadin
                 )}
               </div>
             </div>
+
+            {/* Legend */}
+            <div style={{ ...s.card, background: 'var(--border-light)', border: 'none' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.5rem' }}>Chart Legend</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 24, height: 10, background: '#E6F7EE', borderRadius: 2 }} />
+                  <span>Green = optimal range (functional medicine target)</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 24, height: 10, background: '#F1F5F9', borderRadius: 2 }} />
+                  <span>Gray = standard reference range</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 24, height: 3, background: 'var(--accent-blue)', borderRadius: 2 }} />
+                  <span>Solid line = actual measured values</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 24, height: 0, borderTop: '2px dashed var(--accent-blue)' }} />
+                  <span>Dashed line = projected trajectory</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -457,8 +752,13 @@ function DataInput({ panels, setPanels, wearable, setWearable, onAnalyze, loadin
             onClick={onAnalyze}
             disabled={loading || panels.every(p => !p.date)}
           >
-            {loading ? <><Loader2 size={18} /> Analyzing...</> : <>Analyze <ArrowRight size={18} /></>}
+            {loading ? <><Loader2 size={18} /> Analyzing...</> : <>Analyze Trajectories <ArrowRight size={18} /></>}
           </button>
+          {panels.every(p => !p.date) && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.75rem' }}>
+              Enter at least one panel with a date to start analysis.
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -470,25 +770,46 @@ function DataInput({ panels, setPanels, wearable, setWearable, onAnalyze, loadin
 // ---------------------------------------------------------------------------
 
 function SummaryCards({ analysis }) {
-  const { risk_scores, alerts } = analysis
+  const { risk_scores, alerts, biomarker_trajectories } = analysis
   const score = risk_scores?.overall != null ? Math.round(risk_scores.overall * 100) : 0
+  const improving = Object.values(biomarker_trajectories || {}).filter(t => {
+    if (t.current_status === 'out_of_range' && t.predicted_90d != null) {
+      const ref = REF[Object.keys(REF).find(k => REF[k].label === t.name)]
+      if (ref) {
+        const [oLo, oHi] = ref.optimal
+        return t.predicted_90d >= oLo && t.predicted_90d <= oHi
+      }
+    }
+    return false
+  }).length
 
   return (
-    <div style={s.grid3}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
       <div style={s.card}>
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: 4 }}>Overall Score</div>
-        <div style={{ fontSize: '2rem', fontWeight: 700, color: score >= 80 ? 'var(--accent-green)' : score >= 50 ? '#D97706' : '#DC2626' }}>
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Health Score</div>
+        <div style={{ fontSize: '2.2rem', fontWeight: 700, color: score >= 80 ? 'var(--accent-green)' : score >= 50 ? '#D97706' : '#DC2626' }}>
           {score}%
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          {score >= 80 ? 'Most markers in range' : score >= 50 ? 'Some markers need attention' : 'Multiple markers flagged'}
         </div>
       </div>
       <div style={s.card}>
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: 4 }}>Markers Analyzed</div>
-        <div style={{ fontSize: '2rem', fontWeight: 700 }}>{risk_scores?.total_markers || 0}</div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{risk_scores?.markers_at_risk || 0} flagged</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Markers Analyzed</div>
+        <div style={{ fontSize: '2.2rem', fontWeight: 700 }}>{risk_scores?.total_markers || 0}</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{risk_scores?.markers_at_risk || 0} flagged for attention</div>
       </div>
       <div style={s.card}>
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: 4 }}>Predictive Alerts</div>
-        <div style={{ fontSize: '2rem', fontWeight: 700 }}>{alerts?.length || 0}</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Predictive Alerts</div>
+        <div style={{ fontSize: '2.2rem', fontWeight: 700 }}>{alerts?.length || 0}</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          {alerts?.filter(a => a.severity === 'positive').length || 0} positive, {alerts?.filter(a => a.severity === 'warning').length || 0} warnings
+        </div>
+      </div>
+      <div style={s.card}>
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Trending to Optimal</div>
+        <div style={{ fontSize: '2.2rem', fontWeight: 700, color: 'var(--accent-green)' }}>{improving}</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>markers improving toward target</div>
       </div>
     </div>
   )
@@ -513,7 +834,7 @@ function TrajectoryChart({ data }) {
 
   return (
     <div style={{ ...s.card, padding: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
         <div>
           <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{data.name}</span>
           <span style={{ ...s.mono, color: 'var(--text-muted)', marginLeft: 8 }}>{data.current_value} {data.unit}</span>
@@ -524,6 +845,9 @@ function TrajectoryChart({ data }) {
           </span>
           <TrendIcon size={14} color={data.trend === 'increasing' ? 'var(--accent-green)' : data.trend === 'declining' ? '#DC2626' : 'var(--text-muted)'} />
         </div>
+      </div>
+      <div style={{ ...s.mono, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+        90d projection: {data.predicted_90d} {data.unit} · R² = {data.r_squared}
       </div>
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -545,7 +869,10 @@ function CorrelationMatrix({ correlations }) {
   if (!correlations?.length) return null
   return (
     <div style={s.card}>
-      <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Wearable–Biomarker Correlations</h3>
+      <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Wearable–Biomarker Correlations</h3>
+      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+        Which daily biometrics tracked with which lab changes between blood draws.
+      </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
         {correlations.map((c, i) => (
           <div key={i} style={{
@@ -578,7 +905,10 @@ function AlertCards({ alerts }) {
 
   return (
     <div>
-      <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Predictive Alerts</h3>
+      <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Predictive Alerts</h3>
+      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+        Automated flags based on projected trajectories and rate-of-change analysis.
+      </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {alerts.map((a, i) => (
           <div key={i} style={{ ...s.card, display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '1rem', marginBottom: 0 }}>
@@ -600,7 +930,17 @@ function Dashboard({ analysis, onBack }) {
   const [reportError, setReportError] = useState(null)
 
   const trajectories = analysis.biomarker_trajectories || {}
-  const sorted = Object.entries(trajectories).sort((a, b) => a[1].name.localeCompare(b[1].name))
+
+  // Group by category
+  const grouped = useMemo(() => {
+    const groups = {}
+    for (const [key, data] of Object.entries(trajectories)) {
+      const cat = data.category || 'Other'
+      if (!groups[cat]) groups[cat] = []
+      groups[cat].push([key, data])
+    }
+    return groups
+  }, [trajectories])
 
   const generateReport = async () => {
     setReportLoading(true)
@@ -628,7 +968,10 @@ function Dashboard({ analysis, onBack }) {
     <div style={s.page}>
       <div style={s.container}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2>Results Dashboard</h2>
+          <div>
+            <h2 style={{ marginBottom: '0.25rem' }}>Results Dashboard</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Longitudinal analysis of {Object.keys(trajectories).length} biomarkers</p>
+          </div>
           <button style={{ ...s.btn, ...s.btnSecondary, padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={onBack}>
             ← Back to Input
           </button>
@@ -636,12 +979,27 @@ function Dashboard({ analysis, onBack }) {
 
         <SummaryCards analysis={analysis} />
 
-        <h3 style={{ fontSize: '1rem', marginTop: '1.5rem', marginBottom: '1rem' }}>Biomarker Trajectories</h3>
-        <div style={s.grid2}>
-          {sorted.map(([key, data]) => <TrajectoryChart key={key} data={data} />)}
-        </div>
+        {/* Trajectories grouped by category */}
+        {Object.entries(grouped).map(([cat, markers]) => {
+          const catInfo = CATEGORIES[cat]
+          const Icon = catInfo?.icon || Activity
+          return (
+            <div key={cat} style={{ marginTop: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
+                <Icon size={18} color={catInfo?.color || 'var(--accent-blue)'} />
+                <h3 style={{ fontSize: '1.05rem' }}>{cat}</h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({markers.length} markers)</span>
+              </div>
+              <div style={s.grid2}>
+                {markers.sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([key, data]) => (
+                  <TrajectoryChart key={key} data={data} />
+                ))}
+              </div>
+            </div>
+          )
+        })}
 
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '2rem' }}>
           <CorrelationMatrix correlations={analysis.correlations} />
         </div>
 
@@ -652,19 +1010,23 @@ function Dashboard({ analysis, onBack }) {
         {/* AI Clinical Summary */}
         <div style={{ marginTop: '1.5rem' }}>
           <div style={s.card}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>AI Clinical Summary</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.75rem' }}>
+              <Brain size={20} color="var(--accent-blue)" />
+              <h3 style={{ fontSize: '1rem' }}>AI Clinical Summary</h3>
+            </div>
             {report ? (
-              <div style={{ fontSize: '0.9rem', lineHeight: 1.7, whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>
+              <div style={{ fontSize: '0.9rem', lineHeight: 1.8, whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>
                 {report}
               </div>
             ) : (
               <div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                  Generate a narrative analysis of your longitudinal data using Claude.
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem', lineHeight: 1.5 }}>
+                  Generate a narrative synthesis of your longitudinal data using Claude.
+                  Includes mechanistic insights, key improvements, remaining concerns, and suggested next steps.
                 </p>
                 {reportError && <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{reportError}</p>}
                 <button style={{ ...s.btn, ...s.btnPrimary }} onClick={generateReport} disabled={reportLoading}>
-                  {reportLoading ? <><Loader2 size={16} /> Generating...</> : 'Generate Summary'}
+                  {reportLoading ? <><Loader2 size={16} /> Generating...</> : <><Sparkles size={16} /> Generate Summary</>}
                 </button>
               </div>
             )}
@@ -679,7 +1041,7 @@ function Dashboard({ analysis, onBack }) {
             a.download = `biosignal-report-${new Date().toISOString().slice(0, 10)}.json`
             a.click(); URL.revokeObjectURL(url)
           }}>
-            <Download size={16} /> Download Report
+            <Download size={16} /> Download Full Report
           </button>
         </div>
       </div>
