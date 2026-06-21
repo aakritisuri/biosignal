@@ -7,29 +7,70 @@
 :root {
   --bg-primary: #FAFCFE;
   --bg-card: #FFFFFF;
-  --text-primary: #0F1A2E;
+  --bg-elevated: #FFFFFF;
+  --text-primary: #1A1D2E;
   --text-secondary: #4A5568;
-  --text-muted: #718096;
-  --accent-blue: #1A56DB;
-  --accent-blue-light: #E8F0FE;
-  --accent-green: #3AAE6F;
-  --accent-green-light: #E6F7EE;
-  --border: #E2E8F0;
-  --border-light: #F1F5F9;
+  --text-muted: #8492A6;
+  --accent-blue: #2563EB;
+  --accent-blue-light: #EFF6FF;
+  --accent-blue-hover: #1D4ED8;
+  --accent-green: #16A34A;
+  --accent-green-light: #F0FDF4;
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+  --error-bg: #FEF2F2;
+  --error-text: #DC2626;
+  --warning-bg: #FFFBEB;
+  --warning-text: #D97706;
+  --range-fill: #F3F4F6;
+  --optimal-fill: #F0FDF4;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0C0F1A;
+  --bg-card: #151926;
+  --bg-elevated: #1C2035;
+  --text-primary: #E8ECF4;
+  --text-secondary: #A0AEC0;
+  --text-muted: #5A6578;
+  --accent-blue: #60A5FA;
+  --accent-blue-light: #172554;
+  --accent-blue-hover: #93C5FD;
+  --accent-green: #4ADE80;
+  --accent-green-light: #0A2416;
+  --border: #1F2937;
+  --border-light: #1A2032;
+  --error-bg: #2D1515;
+  --error-text: #F87171;
+  --warning-bg: #2D2410;
+  --warning-text: #FBBF24;
+  --range-fill: #1F2937;
+  --optimal-fill: #0A2416;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.4);
 }
 
 body {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3 {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Serif Display', Georgia, serif;
   font-weight: 400;
   line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 a {
@@ -39,4 +80,24 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
+
+input:focus, select:focus {
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px var(--accent-blue-light);
+}
+
+::selection {
+  background: var(--accent-blue);
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
 }
